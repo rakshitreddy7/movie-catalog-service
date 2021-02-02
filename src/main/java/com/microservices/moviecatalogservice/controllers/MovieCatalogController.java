@@ -4,6 +4,8 @@ import com.microservices.moviecatalogservice.models.Catalog;
 import com.microservices.moviecatalogservice.models.CatalogMovieInfo;
 import com.microservices.moviecatalogservice.models.Movie;
 import com.microservices.moviecatalogservice.models.UserRatings;
+import com.microservices.moviecatalogservice.services.MovieInfoService;
+import com.microservices.moviecatalogservice.services.UserRatingsInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,12 +23,18 @@ public class MovieCatalogController {
     @Autowired
     private RestTemplate restTemplate;
 
-    @GetMapping(value = "/users/{userId}")
+    @Autowired
+    private MovieInfoService movieInfoService;
+
+    @Autowired
+    private UserRatingsInfoService userRatingsInfoService;
+
+    @GetMapping(value = "/users/{userId}", produces = "application/json")
     public Catalog getUserCatalog(@PathVariable(value = "userId") String id) {
 
         List<CatalogMovieInfo> movies = new ArrayList<>();
 
-        UserRatings userRatings = restTemplate.getForObject("http://localhost:8082/ratings/user/" + id, UserRatings.class);
+        UserRatings userRatings = userRatingsInfoService.getUserRatingsInfo(id);
 
         if (userRatings == null)
             return Catalog.builder().build();
@@ -35,7 +43,7 @@ public class MovieCatalogController {
             String movieId = rating.getMovieId();
             double movieRating = rating.getRating();
 
-            Movie movie = restTemplate.getForObject("http://localhost:8083/movie-info/movie/" + movieId, Movie.class);
+            Movie movie = movieInfoService.getMovieInfo(movieId);
 
             if (movie != null) {
                 movies.add(CatalogMovieInfo.builder()
@@ -52,5 +60,4 @@ public class MovieCatalogController {
                 .catalogMovieInfos(movies)
                 .build();
     }
-
 }
